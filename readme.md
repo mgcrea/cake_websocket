@@ -1,0 +1,58 @@
+# CakePHP WebSocket Plugin
+by `Olivier Louvignes`
+
+
+## DESCRIPTION
+
+This repository contains a [CakePHP](https://github.com/cakephp) plugin that provides :
+
+* a `WebSocket` Object (that extends HttpSocket core class) to act as websocket client
+
+* a `Publishable` Behavior that aims to provide easy broadcasting of changes occuring in your models
+
+
+## SETUP
+
+1. Clone this plugin to `app/Plugin/WebSocket`
+2. Load the plugin in your `config/bootstrap.php` file :
+
+	CakePlugin::load('WebSocket');
+
+3. Configure one of your model to use the `Publishable` Behavior.
+
+	public $actsAs = array('Publishable' => array('fields' => array('name', 'status_date', 'status_code', 'status_progress')),
+
+
+## WEBSOCKET INTERFACE
+
+	$websocket = new WebSocket(array('port' => 8080));
+
+	if($websocket->connect()) {
+
+		$someData = array('notify' => false, 'foo' => $bar);
+		$websocket->emit('some-event', $someData);
+
+	}
+
+## BUGS AND CONTRIBUTIONS
+
+Some functions (encoding/decoding) were extracted from this [php-websocket](https://github.com/lemmingzshadow/php-websocket) project.
+
+Patches welcome! Send a pull request.
+
+Post issues on [Github](http://github.com/mgcrea/cake_websocket/issues)
+
+The latest code will always be [here](http://github.com/mgcrea/cake_websocket)
+
+
+## LICENSE
+
+Copyright 2012 Olivier Louvignes. All rights reserved.
+
+The MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
