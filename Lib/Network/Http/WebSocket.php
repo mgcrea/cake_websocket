@@ -137,7 +137,7 @@ class WebSocket extends HttpSocket {
 		if(is_array($payload) || is_object($payload)) {
 			$message = sprintf('4:%s:%s:%s', $id, $this->config['namespace'], json_encode($payload));
 		} else {
-			$message = sprintf('3:%s:%s:%s', $id, $this->config['namespace'], (string)$payload));
+			$message = sprintf('3:%s:%s:%s', $id, $this->config['namespace'], (string)$payload);
 		}
 		return $this->write($message);
 	}

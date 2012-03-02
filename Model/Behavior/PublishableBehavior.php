@@ -10,7 +10,7 @@
  * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
-App::uses('WebSocket', 'Network/Http');
+App::uses('WebSocket', 'WebSocket.Network/Http');
 
 /**
  * MgUtils Plugin
