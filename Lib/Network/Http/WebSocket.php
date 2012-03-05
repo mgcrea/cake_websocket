@@ -302,7 +302,7 @@ class WebSocket extends HttpSocket {
 		$this->request['auth'] = $this->_auth;
 
 		if (is_array($this->request['body'])) {
-			$this->request['body'] = $this->_httpSerialize($this->request['body']);
+			$this->request['body'] = http_build_query($this->request['body']);
 		}
 
 		if (!empty($this->request['body']) && !isset($this->request['header']['Content-Type'])) {
@@ -342,7 +342,6 @@ class WebSocket extends HttpSocket {
 
 		$response = null;
 		$inHeader = true;
-
 		$response = $this->read();
 		// while ($data = $this->read()) {
 		// 	if ($this->_contentResource) {
@@ -382,6 +381,12 @@ class WebSocket extends HttpSocket {
 				$this->config['request']['cookies'][$Host] = array();
 			}
 			$this->config['request']['cookies'][$Host] = array_merge($this->config['request']['cookies'][$Host], $this->response->cookies);
+		}
+
+		if ($this->request['redirect'] && $this->response->isRedirect()) {
+			$request['uri'] = $this->response->getHeader('Location');
+			$request['redirect'] = is_int($this->request['redirect']) ? $this->request['redirect'] - 1 : $this->request['redirect'];
+			$this->response = $this->request($request);
 		}
 
 		return $this->response;
