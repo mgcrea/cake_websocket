@@ -45,10 +45,13 @@ class WebSocket extends HttpSocket {
  * @throws SocketException
  */
 	public function connect() {
-		parent::connect();
+		@parent::connect(); // avoid fsocketerror spam
 		if($this->connected && !$this->_handshake) {
 			return $this->_handshake();
+		} else {
+			// ws down.
 		}
+
 		return $this->connected;
 	}
 

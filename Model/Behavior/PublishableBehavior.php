@@ -63,32 +63,34 @@ class PublishableBehavior extends ModelBehavior {
  */
 	function afterSave(&$Model, $created, $options = array()) {
 		$settings = $this->settings[$Model->alias];
-		$broadcast = $Model->data[$Model->alias];
+		$object = $Model->data[$Model->alias];
 
-		try {
-			if(!$this->websocket->connect()) return false;
-		} catch (Exception $e) {
-			throw $e;
-			//return false;
-		}
-
+		// Filter behavior configuration fields
 		if(!empty($settings['fields'])) {
 			$settings['fields'] = array_merge(array('id'), $settings['fields']);
-			$broadcast = array_intersect_key($broadcast, array_flip($settings['fields']));
+			$object = array_intersect_key($object, array_flip($settings['fields']));
 		}
 
-		if($created) {
+		// Filter save() action field whitelist
+		if(!empty($options['fieldList'])) {
+			$object = array_intersect_key($object, array_flip($options['fieldList']));
+		}
 
-			$success = $this->websocket->emit('edit', array('notify' => false, 'response' => $broadcast));
+		$object['id'] = $Model->id;
+		if(!empty($object) && count($object) > 1) {
 
-		} else {
+			if(!@$this->websocket->connect()) return false;
 
-			$broadcast['id'] = $Model->id; // $broadcast['name'] = sha1(time()); $broadcast['status_progress'] = rand(0, 100);
-			$success = $this->websocket->emit('edit', array('notify' => false, 'response' => $broadcast));
+			if($created) {
+				$success = $this->websocket->emit('create', array('notify' => false, 'response' => $object));
+			} else {
+				$success = $this->websocket->emit('edit', array('notify' => false, 'response' => $object));
+			}
+
+			@$this->websocket->disconnect();
 
 		}
 
-		$this->websocket->disconnect();
 	}
 
 }
