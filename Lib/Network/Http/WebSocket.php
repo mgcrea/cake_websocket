@@ -45,6 +45,12 @@ class WebSocket extends HttpSocket {
  * @throws SocketException
  */
 	public function connect() {
+
+		// Support direct uri configuration
+		if(!empty($this->config['host'])) $this->config['request']['uri']['host'] = $this->config['host'];
+		if(!empty($this->config['scheme'])) $this->config['request']['uri']['scheme'] = $this->config['scheme'];
+		if(!empty($this->config['port'])) $this->config['request']['uri']['port'] = $this->config['port'];
+
 		@parent::connect(); // avoid fsocketerror spam
 		if($this->connected && !$this->_handshake) {
 			return $this->_handshake();
@@ -62,8 +68,8 @@ class WebSocket extends HttpSocket {
 	}
 
 	protected function _handshake() {
-		$this->_handshake = $this->post(array('path' => '/socket.io/1/?t=' . time(), 'scheme' => 'http', 'port' => $this->config['port']));
 
+		$this->_handshake = $this->post(array('path' => '/socket.io/1/?t=' . (int)microtime(true)*1000, 'scheme' => $this->config['scheme'], 'port' => $this->config['port']));
 		if($this->_handshake->code != 200) {
 			$this->disconnect();
 			throw new ServiceUnavailableException();
@@ -79,13 +85,13 @@ class WebSocket extends HttpSocket {
 			'Connection' => 'Upgrade',
 			'Upgrade' => 'websocket',
 			'Sec-WebSocket-Key' => $key,
-			'Sec-WebSocket-Origin' => 'http://' . SERVER_NAME,
+			'Sec-WebSocket-Origin' => $this->config['scheme'] . '://' . SERVER_NAME,
 			'Sec-WebSocket-Version' => 13
 		);
 
 		$this->connect();
 		//$this->setTimeout(0, 1000);
-		$this->_transport = $this->get(array('path' => '/socket.io/1/websocket/' . $id, 'scheme' => 'wss', 'port' => $this->config['port']), array(), compact('header', 'timeout'));
+		$this->_transport = $this->get(array('path' => '/socket.io/1/websocket/' . $id, 'scheme' => $this->config['scheme'] == 'https' ? 'wss' : 'ws', 'port' => $this->config['port']), array(), compact('header', 'timeout'));
 
 		$receivedKey = $this->_transport->headers['Sec-WebSocket-Accept'];
 		$expectedKey = base64_encode(pack('H*', sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
@@ -244,6 +250,7 @@ class WebSocket extends HttpSocket {
 			$request['uri'] = null;
 		}
 		$uri = $this->_parseUri($request['uri']);
+
 		if (!isset($uri['host'])) {
 			$host = $this->config['host'];
 		}
@@ -346,38 +353,18 @@ class WebSocket extends HttpSocket {
 		$response = null;
 		$inHeader = true;
 		$response = $this->read();
-		// while ($data = $this->read()) {
-		// 	if ($this->_contentResource) {
-		// 		if ($inHeader) {
-		// 			$response .= $data;
-		// 			$pos = strpos($response, "\r\n\r\n");
-		// 			if ($pos !== false) {
-		// 				$pos += 4;
-		// 				$data = substr($response, $pos);
-		// 				fwrite($this->_contentResource, $data);
-
-		// 				$response = substr($response, 0, $pos);
-		// 				$inHeader = false;
-		// 			}
-		// 		} else {
-		// 			fwrite($this->_contentResource, $data);
-		// 			fflush($this->_contentResource);
-		// 		}
-		// 	} else {
-		// 		$response .= $data;
-		// 	}
-		// }
+		notice(array('request' => $this->request['raw'], 'response' => $response));
+		if(!$response) throw new BadRequestException();
 
 		if ($connectionType === 'close') {
 			$this->disconnect();
 		}
 
 		list($plugin, $responseClass) = pluginSplit($this->responseClass, true);
-		App::uses($this->responseClass, $plugin . 'Network/Http');
+		App::uses($responseClass, $plugin . 'Network/Http');
 		if (!class_exists($responseClass)) {
 			throw new SocketException(__d('cake_dev', 'Class %s not found.', $this->responseClass));
 		}
-		$responseClass = $this->responseClass;
 		$this->response = new $responseClass($response);
 		if (!empty($this->response->cookies)) {
 			if (!isset($this->config['request']['cookies'][$Host])) {
@@ -386,7 +373,7 @@ class WebSocket extends HttpSocket {
 			$this->config['request']['cookies'][$Host] = array_merge($this->config['request']['cookies'][$Host], $this->response->cookies);
 		}
 
-		if (!empty($this->request['redirect']) && $this->request['redirect'] && $this->response->isRedirect()) {
+		if ($this->request['redirect'] && $this->response->isRedirect()) {
 			$request['uri'] = $this->response->getHeader('Location');
 			$request['redirect'] = is_int($this->request['redirect']) ? $this->request['redirect'] - 1 : $this->request['redirect'];
 			$this->response = $this->request($request);

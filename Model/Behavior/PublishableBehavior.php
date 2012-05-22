@@ -55,7 +55,7 @@ class PublishableBehavior extends ModelBehavior {
 		$this->settings[$Model->alias] = $settings;
 
 		$namespace = '/' . strtolower(Inflector::pluralize($Model->alias));
-		$this->websocket = new WebSocket(array('persistent' => false, 'port' => 8080, 'namespace' => $namespace));
+		$this->websocket = new WebSocket(array('scheme' => 'https', 'host' => SERVER_NAME, 'persistent' => false, 'port' => 8080, 'namespace' => $namespace));
 	}
 
 /**
