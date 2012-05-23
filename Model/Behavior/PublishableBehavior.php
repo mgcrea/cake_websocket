@@ -42,6 +42,13 @@ class PublishableBehavior extends ModelBehavior {
  * @var array
  */
 	protected $_defaults = array(
+		'fields' => array(),
+		'server' => array(
+			'scheme' => 'https',
+			'host' => 'localhost',
+			'persistent' => false,
+			'port' => 8080
+		)
 	);
 
 /**
@@ -55,7 +62,7 @@ class PublishableBehavior extends ModelBehavior {
 		$this->settings[$Model->alias] = $settings;
 
 		$namespace = '/' . strtolower(Inflector::pluralize($Model->alias));
-		$this->websocket = new WebSocket(array('scheme' => 'https', 'host' => SERVER_NAME, 'persistent' => false, 'port' => 8080, 'namespace' => $namespace));
+		$Model->websocket = new WebSocket(array_merge($settings['server'], array('namespace' => $namespace)));
 	}
 
 /**
@@ -77,20 +84,26 @@ class PublishableBehavior extends ModelBehavior {
 		}
 
 		$object['id'] = $Model->id;
-		if(!empty($object) && count($object) > 1) {
+		if(!empty($object) && count($object) > 1 && !empty($Model->websocket)) {
 
-			if(!@$this->websocket->connect()) return false;
+			if(!$Model->websocket->connect()) return false;
 
 			if($created) {
-				$success = $this->websocket->emit('create', array('notify' => false, 'response' => $object));
+				$success = $Model->websocket->emit('create', array('notify' => false, 'response' => $object));
 			} else {
-				$success = $this->websocket->emit('edit', array('notify' => false, 'response' => $object));
+				$success = $Model->websocket->emit('edit', array('notify' => false, 'response' => $object));
 			}
 
-			@$this->websocket->disconnect();
+			//$Model->websocket->disconnect();
 
 		}
 
+	}
+
+	public function cleanup() {
+		if($Model->websocket && $Model->websocket->connected) {
+			$Model->websocket->disconnect();
+		}
 	}
 
 }

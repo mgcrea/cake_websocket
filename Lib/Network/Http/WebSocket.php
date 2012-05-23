@@ -46,16 +46,22 @@ class WebSocket extends HttpSocket {
  */
 	public function connect() {
 
+		// Scheme aliases to http
+		if($this->config['scheme'] == 'wss') $this->config['scheme'] = 'https';
+		elseif($this->config['scheme'] == 'ws') $this->config['scheme'] = 'http';
+
 		// Support direct uri configuration
 		if(!empty($this->config['host'])) $this->config['request']['uri']['host'] = $this->config['host'];
 		if(!empty($this->config['scheme'])) $this->config['request']['uri']['scheme'] = $this->config['scheme'];
 		if(!empty($this->config['port'])) $this->config['request']['uri']['port'] = $this->config['port'];
 
-		@parent::connect(); // avoid fsocketerror spam
-		if($this->connected && !$this->_handshake) {
-			return $this->_handshake();
-		} else {
-			// ws down.
+		if(!$this->connected) {
+			parent::connect();
+			if($this->connected && !$this->_handshake) {
+				return $this->_handshake();
+			} else {
+				return false;
+			}
 		}
 
 		return $this->connected;
@@ -69,6 +75,7 @@ class WebSocket extends HttpSocket {
 
 	protected function _handshake() {
 
+		// Initial handshake
 		$this->_handshake = $this->post(array('path' => '/socket.io/1/?t=' . (int)microtime(true)*1000, 'scheme' => $this->config['scheme'], 'port' => $this->config['port']));
 		if($this->_handshake->code != 200) {
 			$this->disconnect();
