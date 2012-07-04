@@ -360,7 +360,7 @@ class WebSocket extends HttpSocket {
 		$response = null;
 		$inHeader = true;
 		$response = $this->read();
-		notice(array('request' => $this->request['raw'], 'response' => $response));
+		//notice(array('request' => $this->request['raw'], 'response' => $response));
 		if(!$response) throw new BadRequestException();
 
 		if ($connectionType === 'close') {
