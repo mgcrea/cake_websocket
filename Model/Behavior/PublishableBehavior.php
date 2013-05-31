@@ -64,11 +64,11 @@ class PublishableBehavior extends ModelBehavior {
 		$this->settings[$Model->alias] = $settings;
 
 		$namespace = '/' . strtolower(Inflector::pluralize($Model->alias));
-		$Model->websocket = new WebSocket(array_merge($settings['server'], array('namespace' => $namespace)));
+		$Model->websocket = new WebSocket(array_merge($settings['server'], array('namespace' => $namespace, 'silent' => true)));
 	}
 
 /**
- * Before save callback
+ * After save callback
  */
 	function afterSave(&$Model, $created, $options = array()) {
 		$settings = $this->settings[$Model->alias];

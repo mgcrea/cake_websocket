@@ -79,8 +79,10 @@ class WebSocket extends HttpSocket {
 		$this->_handshake = $this->post(array('path' => '/socket.io/1/?t=' . (int)microtime(true)*1000, 'scheme' => $this->config['scheme'], 'port' => $this->config['port']));
 		if($this->_handshake->code != 200) {
 			$this->disconnect();
+			if(!empty($this->config['silent'])) return false;
 			throw new ServiceUnavailableException();
 		}
+		// dd($this->_handshake->code);
 
 		// Extract information from handshake HttpResponse
 		list($id, $heartbeat, $timeout, $transports) = explode(':', $this->_handshake->body);
@@ -98,13 +100,20 @@ class WebSocket extends HttpSocket {
 
 		$this->connect();
 		//$this->setTimeout(0, 1000);
-		$this->_transport = $this->get(array('path' => '/socket.io/1/websocket/' . $id, 'scheme' => $this->config['scheme'] == 'https' ? 'wss' : 'ws', 'port' => $this->config['port']), array(), compact('header', 'timeout'));
+		try {
+			$this->_transport = $this->get(array('path' => '/socket.io/1/websocket/' . $id, 'scheme' => $this->config['scheme'] == 'https' ? 'wss' : 'ws', 'port' => $this->config['port']), array(), compact('header', 'timeout'));
+		} catch(Exception $e) {
+			$this->disconnect();
+			if(!empty($this->config['silent'])) return false;
+			throw new ServiceUnavailableException();
+		}
 
 		$receivedKey = $this->_transport->headers['Sec-WebSocket-Accept'];
 		$expectedKey = base64_encode(pack('H*', sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
 
 		if($receivedKey != $expectedKey) {
 			$this->disconnect();
+			if(!empty($this->config['silent'])) return false;
 			throw new ServiceUnavailableException();
 		}
 
