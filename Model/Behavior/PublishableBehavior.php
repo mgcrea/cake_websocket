@@ -10,7 +10,7 @@
  * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
-App::uses('WebSocket', 'Network/Http');
+App::uses('WebSocket', 'WebSocket.Network/Http');
 
 /**
  * MgUtils Plugin
@@ -42,6 +42,13 @@ class PublishableBehavior extends ModelBehavior {
  * @var array
  */
 	protected $_defaults = array(
+		'fields' => array(),
+		'server' => array(
+			'scheme' => 'https',
+			'host' => 'localhost',
+			'persistent' => false,
+			'port' => 8080
+		)
 	);
 
 /**
@@ -51,44 +58,54 @@ class PublishableBehavior extends ModelBehavior {
  * @param array $config
  */
 	public function setup(&$Model, $config = array()) {
+		// Allow override by IS_SSL constant
+		$this->_defaults['server']['scheme'] = defined('IS_SSL') && IS_SSL ? 'https' : 'http';
 		$settings = array_merge($this->_defaults, $config);
 		$this->settings[$Model->alias] = $settings;
 
 		$namespace = '/' . strtolower(Inflector::pluralize($Model->alias));
-		$this->websocket = new WebSocket(array('persistent' => false, 'port' => 8080, 'namespace' => $namespace));
+		$Model->websocket = new WebSocket(array_merge($settings['server'], array('namespace' => $namespace, 'silent' => true)));
 	}
 
 /**
- * Before save callback
+ * After save callback
  */
 	function afterSave(&$Model, $created, $options = array()) {
 		$settings = $this->settings[$Model->alias];
-		$broadcast = $Model->data[$Model->alias];
+		$object = $Model->data[$Model->alias];
 
-		try {
-			if(!$this->websocket->connect()) return false;
-		} catch (Exception $e) {
-			throw $e;
-			//return false;
-		}
-
+		// Filter behavior configuration fields
 		if(!empty($settings['fields'])) {
 			$settings['fields'] = array_merge(array('id'), $settings['fields']);
-			$broadcast = array_intersect_key($broadcast, array_flip($settings['fields']));
+			$object = array_intersect_key($object, array_flip($settings['fields']));
 		}
 
-		if($created) {
+		// Filter save() action field whitelist
+		if(!empty($options['fieldList'])) {
+			$object = array_intersect_key($object, array_flip($options['fieldList']));
+		}
 
-			$success = $this->websocket->emit('edit', array('notify' => false, 'response' => $broadcast));
+		$object['id'] = $Model->id;
+		if(!empty($object) && count($object) > 1 && !empty($Model->websocket)) {
 
-		} else {
+			if(!$Model->websocket->connect()) return false;
 
-			$broadcast['id'] = $Model->id; // $broadcast['name'] = sha1(time()); $broadcast['status_progress'] = rand(0, 100);
-			$success = $this->websocket->emit('edit', array('notify' => false, 'response' => $broadcast));
+			if($created) {
+				$success = $Model->websocket->emit('create', array('notify' => false, 'response' => $object));
+			} else {
+				$success = $Model->websocket->emit('edit', array('notify' => false, 'response' => $object));
+			}
+
+			//$Model->websocket->disconnect();
 
 		}
 
-		$this->websocket->disconnect();
+	}
+
+	public function cleanup() {
+		if($Model->websocket && $Model->websocket->connected) {
+			$Model->websocket->disconnect();
+		}
 	}
 
 }
