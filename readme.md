@@ -14,13 +14,20 @@ This repository contains a [CakePHP 2.0](https://github.com/cakephp) plugin that
 ### Installation
 
 1. Clone this plugin to `app/Plugin/WebSocket`
+
 2. Load the plugin in your `app/config/bootstrap.php` file :
 
+		define('SERVER_NAME', $_SERVER['SERVER_NAME']);
 		CakePlugin::load('WebSocket');
 
-3. Configure one of your model to use the `Publishable` Behavior.
+3. To configure one of your model to use the `Publishable` Behavior.
 
 		public $actsAs = array('Publishable' => array('fields' => array('name', 'status_date', 'status_code', 'status_progress')),
+
+3b. To configure one of your controller to use a socket.
+
+		App::import('Plugin/WebSocket/Lib/Network/Http', 'WebSocket', array('file'=>'WebSocket.php'));
+		$websocket = new WebSocket(array('port' => 8080, 'scheme'=>'ws'));
 
 4. Setup a Node WebSocket server using [Socket.io](http://socket.io) like:
 
