@@ -24,12 +24,12 @@ This repository contains a [CakePHP 2.0](https://github.com/cakephp) plugin that
 
 		public $actsAs = array('Publishable' => array('fields' => array('name', 'status_date', 'status_code', 'status_progress')),
 
-3b. To configure one of your controller to use a socket.
+4. To configure one of your controller to use a socket.
 
 		App::import('Plugin/WebSocket/Lib/Network/Http', 'WebSocket', array('file'=>'WebSocket.php'));
 		$websocket = new WebSocket(array('port' => 8080, 'scheme'=>'ws'));
 
-4. Setup a Node WebSocket server using [Socket.io](http://socket.io) like:
+5. Setup a Node WebSocket server using [Socket.io](http://socket.io) like:
 
 		var io = require('socket.io').listen(8080);
 
