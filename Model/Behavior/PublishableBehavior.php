@@ -58,9 +58,7 @@ class PublishableBehavior extends ModelBehavior {
  * @param array $config
  */
 	public function setup(&$Model, $config = array()) {
-		// Allow override by IS_SSL constant
-		$this->_defaults['server']['scheme'] = defined('IS_SSL') && IS_SSL ? 'https' : 'http';
-		$settings = array_merge($this->_defaults, $config);
+		$settings = array_merge($this->_defaults, Configure::read('PublishableBehavior'), $config);
 		$this->settings[$Model->alias] = $settings;
 
 		$namespace = '/' . strtolower(Inflector::pluralize($Model->alias));
