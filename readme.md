@@ -41,6 +41,7 @@ This repository contains a [CakePHP 2.0]+(https://github.com/cakephp) plugin tha
 		});
 
 6. Implement this custom Exception
+
 		// in bootstrap.php
 		require(APP . 'Lib' . DS . 'MyExceptions.php');
 
