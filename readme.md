@@ -4,7 +4,7 @@ by `Olivier Louvignes`
 
 ### Description
 
-This repository contains a [CakePHP 2.0](https://github.com/cakephp) plugin that provides:
+This repository contains a [CakePHP 2.0]+(https://github.com/cakephp) plugin that provides:
 
 * `WebSocket Object` (that extends HttpSocket core class) to act as websocket client
 
@@ -22,7 +22,7 @@ This repository contains a [CakePHP 2.0](https://github.com/cakephp) plugin that
 
 3. To configure one of your model to use the `Publishable` Behavior.
 
-		public $actsAs = array('Publishable' => array('fields' => array('name', 'status_date', 'status_code', 'status_progress')),
+		public $actsAs = array('WebSocket.Publishable' => array('fields' => array('name', 'status_date', 'status_code', 'status_progress')),
 
 4. To configure one of your controller to use a socket.
 
@@ -40,11 +40,23 @@ This repository contains a [CakePHP 2.0](https://github.com/cakephp) plugin that
 		  });
 		});
 
+6. Implement this custom Exception
+		// in bootstrap.php
+		require(APP . 'Lib' . DS . 'MyExceptions.php');
+
+
+		// in /Lib/MyExceptions.php
+		class ServiceUnavailableException extends CakeException {
+
+		    protected $_messageTemplate = 'Test';
+		}
+
+
 ### Interface
 
 Quick example:
 
-	$websocket = new WebSocket(array('port' => 8080));
+	$websocket = new WebSocket(array('port' => 8080, 'scheme'=>'ws'));
 
 	if($websocket->connect()) {
 
