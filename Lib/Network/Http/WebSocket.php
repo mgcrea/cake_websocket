@@ -80,7 +80,7 @@ class WebSocket extends HttpSocket {
 		if($this->_handshake->code != 200) {
 			$this->disconnect();
 			if(!empty($this->config['silent'])) return false;
-			throw new ServiceUnavailableException();
+			throw new ServiceUnavailableException('Service unavailable', 503);
 		}
 		// dd($this->_handshake->code);
 
@@ -105,7 +105,7 @@ class WebSocket extends HttpSocket {
 		} catch(Exception $e) {
 			$this->disconnect();
 			if(!empty($this->config['silent'])) return false;
-			throw new ServiceUnavailableException();
+			throw new ServiceUnavailableException('Service unavailable', 503);
 		}
 
 		$receivedKey = $this->_transport->headers['Sec-WebSocket-Accept'];
@@ -114,7 +114,7 @@ class WebSocket extends HttpSocket {
 		if($receivedKey != $expectedKey) {
 			$this->disconnect();
 			if(!empty($this->config['silent'])) return false;
-			throw new ServiceUnavailableException();
+			throw new ServiceUnavailableException('Service unavailable', 503);
 		}
 
 		$connect = $this->read(5);

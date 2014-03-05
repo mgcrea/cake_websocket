@@ -57,20 +57,20 @@ class PublishableBehavior extends ModelBehavior {
  * @param object AppModel
  * @param array $config
  */
-	public function setup(&$Model, $config = array()) {
-		$settings = array_merge($this->_defaults, Configure::read('PublishableBehavior'), $config);
-		$this->settings[$Model->alias] = $settings;
+	public function setup(Model $model, $config = array()) {
+		$settings = array_merge($this->_defaults, $config);
+		$this->settings[$model->alias] = $settings;
 
-		$namespace = '/' . strtolower(Inflector::pluralize($Model->alias));
-		$Model->websocket = new WebSocket(array_merge($settings['server'], array('namespace' => $namespace, 'silent' => true)));
+		$namespace = '/' . strtolower(Inflector::pluralize($model->alias));
+		$model->websocket = new WebSocket(array_merge($settings['server'], array('namespace' => $namespace, 'silent' => true)));
 	}
 
 /**
  * After save callback
  */
-	function afterSave(&$Model, $created, $options = array()) {
-		$settings = $this->settings[$Model->alias];
-		$object = $Model->data[$Model->alias];
+	function afterSave(Model $model, $created, $options = array()) {
+		$settings = $this->settings[$model->alias];
+		$object = $model->data[$model->alias];
 
 		// Filter behavior configuration fields
 		if(!empty($settings['fields'])) {
@@ -83,30 +83,30 @@ class PublishableBehavior extends ModelBehavior {
 			$object = array_intersect_key($object, array_flip($options['fieldList']));
 		}
 
-		$object['id'] = $Model->id;
-		if(!empty($object) && count($object) > 1 && !empty($Model->websocket)) {
+		$object['id'] = $model->id;
+		if(!empty($object) && count($object) > 1 && !empty($model->websocket)) {
 
 			try {
-				if(!$Model->websocket->connect()) return false;
+				if(!$model->websocket->connect()) return false;
 			} catch(Exception $e) {
 				return false;
 			}
 
 			if($created) {
-				$success = $Model->websocket->emit('create', array('notify' => false, 'response' => $object));
+				$success = $model->websocket->emit('create', array('notify' => false, 'response' => $object));
 			} else {
-				$success = $Model->websocket->emit('edit', array('notify' => false, 'response' => $object));
+				$success = $model->websocket->emit('edit', array('notify' => false, 'response' => $object));
 			}
 
-			//$Model->websocket->disconnect();
+			//$model->websocket->disconnect();
 
 		}
 
 	}
 
-	public function cleanup() {
-		if($Model->websocket && $Model->websocket->connected) {
-			$Model->websocket->disconnect();
+	public function cleanup(Model $model) {
+		if($model->websocket && $model->websocket->connected) {
+			$model->websocket->disconnect();
 		}
 	}
 
