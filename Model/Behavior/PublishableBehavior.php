@@ -85,7 +85,6 @@ class PublishableBehavior extends ModelBehavior {
 
 		$object['id'] = $model->id;
 		if(!empty($object) && count($object) > 1 && !empty($model->websocket)) {
-
 			try {
 				if(!$model->websocket->connect()) return false;
 			} catch(Exception $e) {

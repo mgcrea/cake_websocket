@@ -377,6 +377,7 @@ class WebSocket extends HttpSocket {
 		}
 
 		list($plugin, $responseClass) = pluginSplit($this->responseClass, true);
+		$plugin = 'WebSocket.';
 		App::uses($responseClass, $plugin . 'Network/Http');
 		if (!class_exists($responseClass)) {
 			throw new SocketException(__d('cake_dev', 'Class %s not found.', $this->responseClass));
