@@ -58,7 +58,9 @@ class PublishableBehavior extends ModelBehavior {
  * @param array $config
  */
 	public function setup(Model $model, $config = array()) {
-		$settings = array_merge($this->_defaults, $config);
+		$global = Configure::read('PublishableBehavior');
+		$defaults = $global ? array_merge($this->_defaults, $global) : $this->_defaults;
+		$settings = array_merge($defaults, $config);
 		$this->settings[$model->alias] = $settings;
 
 		$namespace = '/' . strtolower(Inflector::pluralize($model->alias));
