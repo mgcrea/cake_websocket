@@ -75,18 +75,6 @@ class WebSocket extends HttpSocket {
 
 	protected function _handshake() {
 
-		// Initial handshake
-		$this->_handshake = $this->post(array('path' => '/socket.io/1/?t=' . (int)microtime(true)*1000, 'scheme' => $this->config['scheme'], 'port' => $this->config['port']));
-		if($this->_handshake->code != 200) {
-			$this->disconnect();
-			if(!empty($this->config['silent'])) return false;
-			throw new ServiceUnavailableException('Service unavailable', 503);
-		}
-		// dd($this->_handshake->code);
-
-		// Extract information from handshake HttpResponse
-		list($id, $heartbeat, $timeout, $transports) = explode(':', $this->_handshake->body);
-
 		// Create a strong 256bits random string
 		$key = base64_encode(openssl_random_pseudo_bytes(18, $strong));
 
@@ -98,10 +86,14 @@ class WebSocket extends HttpSocket {
 			'Sec-WebSocket-Version' => 13
 		);
 
-		$this->connect();
+		try {
+			$result = $this->connect();
+		} catch(Exception $e) {
+			throw new ServiceUnavailableException('Service unavailable', 503);
+		}
 		//$this->setTimeout(0, 1000);
 		try {
-			$this->_transport = $this->get(array('path' => '/socket.io/1/websocket/' . $id, 'scheme' => $this->config['scheme'] == 'https' ? 'wss' : 'ws', 'port' => $this->config['port']), array(), compact('header', 'timeout'));
+			$this->_transport = $this->get(array('path' => '/socket.io/?EIO=3&transport=websocket', 'scheme' => $this->config['scheme'] == 'https' ? 'wss' : 'ws', 'port' => $this->config['port']), array(), compact('header', 'timeout'));
 		} catch(Exception $e) {
 			$this->disconnect();
 			if(!empty($this->config['silent'])) return false;
@@ -117,13 +109,17 @@ class WebSocket extends HttpSocket {
 			throw new ServiceUnavailableException('Service unavailable', 503);
 		}
 
-		$connect = $this->read(5);
+		$connect = $this->read();
+		$payload = json_decode(substr($connect['payload'], 1), true);
+		$this->sid = $payload['sid'];
+
+		$connect = $this->read();
 		// Switch to correct namespace
 		if($this->config['namespace']) {
 			$this->cd($this->config['namespace']);
 			$connect = $this->read(5 + strlen($this->config['namespace']));
 		}
-		return $connect['payload'] === '1::' . $this->config['namespace'];
+		return $connect['payload'] === '40' . $this->config['namespace'];
 
 	}
 
@@ -135,10 +131,10 @@ class WebSocket extends HttpSocket {
 	 * Connects to a specific endpoint (namespace)
 	 * Handles type 1
 	 *
-	 * @link https://github.com/LearnBoost/socket.io-spec
+	 * @link https://github.com/socketio/engine.io-protocol
 	 */
 	public function cd($endpoint = null) {
-		$message = sprintf('1::%s', $endpoint);
+		$message = sprintf('40%s', $endpoint);
 		return $this->write($message);
 	}
 
@@ -146,17 +142,17 @@ class WebSocket extends HttpSocket {
 	 * Heartbeat
 	 * Handles type 2
 	 *
-	 * @link https://github.com/LearnBoost/socket.io-spec
+	 * @link https://github.com/socketio/engine.io-protocol
 	 */
 	public function heartbeat() {
-		return $this->write('2::');
+		return $this->write('2probe');
 	}
 
 	/**
 	 * Pushes a message
 	 * Handles type 3 & 4
 	 *
-	 * @link https://github.com/LearnBoost/socket.io-spec
+	 * @link https://github.com/socketio/engine.io-protocol
 	 */
 	public function push($payload = null, $id = null) {
 		if(is_array($payload) || is_object($payload)) {
@@ -169,12 +165,12 @@ class WebSocket extends HttpSocket {
 
 	/**
 	 * Emits an event
-	 * Handles type 5
+	 * Handles type 4
 	 *
-	 * @link https://github.com/LearnBoost/socket.io-spec
+	 * @link https://github.com/socketio/engine.io-protocol
 	 */
-	public function emit($event, $payload = array(), $id = null) {
-		$message = sprintf('5:%s:%s:{"name":"%s","args":%s}', $id, $this->config['namespace'], $event, json_encode($payload));
+	public function emit($event, $payload = array()) {
+		$message = sprintf('42%s,["%s",%s]', $this->config['namespace'], $event, json_encode($payload));
 		return $this->write($message);
 	}
 
@@ -182,7 +178,7 @@ class WebSocket extends HttpSocket {
 	 * Emits an acknowledgment
 	 * Handles type 6
 	 *
-	 * @link https://github.com/LearnBoost/socket.io-spec
+	 * @link https://github.com/socketio/engine.io-protocol
 	 */
 	public function ack($payload = array(), $id = null) {
 		if(empty($payload)) $message = sprintf('6:::%s', $id);
@@ -194,7 +190,7 @@ class WebSocket extends HttpSocket {
 	 * Emits an error
 	 * Handles type 7
 	 *
-	 * @link https://github.com/LearnBoost/socket.io-spec
+	 * @link https://github.com/socketio/engine.io-protocol
 	 */
 	public function error($reason = null, $advice = null) {
 		$message = sprintf('7::%s:%s+%s', $this->config['namespace'], $reason, $advice);

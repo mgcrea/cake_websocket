@@ -98,7 +98,6 @@ class PublishableBehavior extends ModelBehavior {
 			} else {
 				$success = $model->websocket->emit('edit', array('notify' => false, 'response' => $object));
 			}
-
 			//$model->websocket->disconnect();
 
 		}
