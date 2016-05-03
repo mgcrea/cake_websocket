@@ -73,15 +73,14 @@ class PublishableBehavior extends ModelBehavior {
 	function afterSave(Model $model, $created, $options = array()) {
 		$settings = $this->settings[$model->alias];
 		$object = $model->data[$model->alias];
-
 		// Filter behavior configuration fields
-		if(!empty($settings['fields'])) {
+		if(!empty($settings['fields']) && is_array($object)) {
 			$settings['fields'] = array_merge(array('id'), $settings['fields']);
 			$object = array_intersect_key($object, array_flip($settings['fields']));
 		}
 
 		// Filter save() action field whitelist
-		if(!empty($options['fieldList'])) {
+		if(!empty($options['fieldList']) && is_array($object)) {
 			$object = array_intersect_key($object, array_flip($options['fieldList']));
 		}
 
